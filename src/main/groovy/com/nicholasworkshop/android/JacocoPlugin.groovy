@@ -110,12 +110,12 @@ class JacocoPlugin implements Plugin<Project> {
             doLast {
                 // generate badge files
                 if (jacocoOptions.createBadges) {
-                    this.generateBadgeFromXmlReport(xmlOutputPath, outputDestination)
+                    generateBadgeFromXmlReport(xmlOutputPath, outputDestination)
                 }
                 // delete class files, it is required if you use jacoco on screwdriver
                 // because screwdriver does not have the option to exclude files
                 if (jacocoOptions.deleteExcludedClassFiles) {
-                    this.deleteExcludedClassFiles(classPath)
+                    deleteExcludedClassFiles(classPath)
                 }
             }
         }
