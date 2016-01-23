@@ -1,10 +1,16 @@
 package com.nicholasworkshop.android
 
+import com.android.build.gradle.AppExtension
+import com.android.build.gradle.BaseExtension
+import com.android.build.gradle.LibraryExtension
+import com.android.build.gradle.api.BaseVariant
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.internal.DefaultDomainObjectSet
 import org.gradle.api.tasks.Exec
+import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
 import org.gradle.testing.jacoco.tasks.JacocoReport
 
 /**
@@ -14,52 +20,63 @@ class JacocoPlugin implements Plugin<Project> {
 
     private Project project;
 
-    private JacocoOptionsExtension getJacocoOptions() {
-        return project.jacocoOptions;
-    }
-
     @Override
     void apply(Project project) {
         this.project = project;
-
-        project.apply(plugin: 'jacoco')
         project.extensions.create('jacocoOptions', JacocoOptionsExtension)
-
         project.afterEvaluate {
-            project.jacoco.setToolVersion(jacocoOptions.version)
+            jacoco.toolVersion = jacocoOptions.version
             // set the default output destination
             if (jacocoOptions.outputDestination == null) {
                 jacocoOptions.outputDestination = "${project.buildDir}/reports/jacoco"
             }
             // create jacoco tasks for each build variants
-            Task task = this.createMainJacocoTask()
-            getBuildVariants().each { variant ->
-                def variantTask = this.createJacocoVariantTasks(variant)
+            Task task = createJacocoTask()
+            buildVariants.each { variant ->
+                Task variantTask = createJacocoVariantTask(variant)
                 task.dependsOn(variantTask)
                 if (jacocoOptions.createHtmlReports) {
-                    this.createJacocoHtmlVariantTasks(variant)
+                    createJacocoVariantHtmlTask(variant)
                 }
             }
         }
     }
 
-    def getBuildVariants() {
-        if (project.plugins.hasPlugin('com.android.application')) {
-            return project.android.applicationVariants;
-        } else if (project.plugins.hasPlugin('com.android.library')) {
-            return project.android.libraryVariants
+    private JacocoPluginExtension getJacoco() {
+        if (!project.plugins.hasPlugin('jacoco')) {
+            println('jacoco plugin not found, applying one...')
+            project.apply(plugin: 'jacoco')
         }
-        throw new GradleException('Android plugin required')
+        return project.jacoco
     }
 
-    Task createMainJacocoTask() {
+    private JacocoOptionsExtension getJacocoOptions() {
+        return project.jacocoOptions
+    }
+
+    private BaseExtension getAndroid() {
+        return project.android
+    }
+
+    private DefaultDomainObjectSet<BaseVariant> getBuildVariants() {
+        if (project.plugins.hasPlugin('com.android.application')) {
+            AppExtension application = android as AppExtension;
+            return application.applicationVariants
+        } else if (project.plugins.hasPlugin('com.android.library')) {
+            LibraryExtension library = android as LibraryExtension;
+            return library.libraryVariants
+        }
+        throw new GradleException('com.android.application or com.android.library plugin required')
+    }
+
+    private Task createJacocoTask() {
         return project.tasks.create(name: "jacoco") {
             group = "Reporting"
             description = "Generate Jacoco coverage reports"
         }
     }
 
-    Task createJacocoHtmlVariantTasks(variant) {
+    private Task createJacocoVariantHtmlTask(variant) {
         String variantName = variant.getName()
         String variantNameCapitalized = variantName.capitalize()
         String outputDestination = "${jacocoOptions.outputDestination}/${variantName}"
@@ -70,7 +87,7 @@ class JacocoPlugin implements Plugin<Project> {
         }
     }
 
-    Task createJacocoVariantTasks(variant) {
+    private Task createJacocoVariantTask(variant) {
         String variantName = variant.getName()
         String variantNameCapitalized = variantName.capitalize()
         String buildTypeName = variant.buildType.getName()
@@ -82,8 +99,8 @@ class JacocoPlugin implements Plugin<Project> {
             group = "Reporting"
             description = "Generate Jacoco coverage reports"
             classDirectories = project.fileTree(dir: classPath, excludes: jacocoOptions.excludes)
-            additionalSourceDirs = project.files([project.android.sourceSets.main.java.srcDirs])
-            sourceDirectories = project.files([project.android.sourceSets.main.java.srcDirs])
+            additionalSourceDirs = project.files([android.sourceSets.main.java.srcDirs])
+            sourceDirectories = project.files([android.sourceSets.main.java.srcDirs])
             executionData = project.files("${project.buildDir}/jacoco/${dependentTask}.exec")
             reports {
                 xml.enabled = true
@@ -105,13 +122,13 @@ class JacocoPlugin implements Plugin<Project> {
         }
     }
 
-    def deleteExcludedClassFiles(classPath) {
+    private void deleteExcludedClassFiles(classPath) {
         println("deleting intermiediate class files...")
         project.delete project.fileTree(dir: classPath, includes: jacocoOptions.excludes)
         project.delete project.fileTree(dir: "${project.buildDir}/intermediates/classes/test")
     }
 
-    void generateBadgeFromXmlReport(String path, String outputDestination) {
+    private void generateBadgeFromXmlReport(String path, String outputDestination) {
         println("generating coverage badges...")
         XmlParser parser = new XmlParser()
         parser.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
@@ -126,7 +143,7 @@ class JacocoPlugin implements Plugin<Project> {
         }
     }
 
-    void generateBadge(String name, float percentage, String outputDestination) {
+    private void generateBadge(String name, float percentage, String outputDestination) {
         String[] colors = ['red', 'orange', 'yellow', 'yellowgreen', 'green', 'brightgreen']
         String percentageString = String.format("%.1f%%25", percentage * 100)
         String colorString = colors[(int) (percentage * 6)]
