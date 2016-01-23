@@ -1,6 +1,6 @@
 package com.nicholasworkshop.android
 
-import org.gradle.api.Project
+import org.gradle.api.internal.project.DefaultProject
 import org.gradle.testfixtures.ProjectBuilder
 import org.testng.annotations.Test
 
@@ -11,7 +11,8 @@ class JacocoPluginTest {
 
     @Test
     void testApply() throws Exception {
-        Project project = ProjectBuilder.builder().build();
+        DefaultProject project = ProjectBuilder.builder().build();
         project.apply plugin: 'com.nicholasworkshop.android.jacoco'
+        project.evaluate()
     }
 }
