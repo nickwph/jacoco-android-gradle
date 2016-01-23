@@ -3,6 +3,7 @@ package com.nicholasworkshop.android
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.tasks.Exec
 import org.gradle.testing.jacoco.tasks.JacocoReport
 
@@ -11,8 +12,12 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
  */
 class JacocoPlugin implements Plugin<Project> {
 
+    private Project project;
+
     @Override
     void apply(Project project) {
+        this.project = project;
+
         project.apply plugin: 'jacoco'
         project.extensions.create('jacocoOptions', JacocoOptionsExtension)
 
@@ -23,8 +28,8 @@ class JacocoPlugin implements Plugin<Project> {
                 project.jacocoOptions.outputDestination = "${project.buildDir}/reports/jacoco"
             }
             // create jacoco tasks for each build variants
-            def task = this.createMainJacocoTask(project)
-            this.getBuildVariants(project).each { variant ->
+            Task task = this.createMainJacocoTask()
+            getBuildVariants().each { variant ->
                 def variantTask = this.createJacocoVariantTasks(project, variant)
                 task.dependsOn(variantTask)
                 if (project.jacocoOptions.createHtmlReports) {
@@ -34,7 +39,7 @@ class JacocoPlugin implements Plugin<Project> {
         }
     }
 
-    def getBuildVariants(project) {
+    Task getBuildVariants() {
         if (project.plugins.hasPlugin('com.android.application')) {
             return project.android.applicationVariants;
         } else if (project.plugins.hasPlugin('com.android.library')) {
@@ -43,17 +48,17 @@ class JacocoPlugin implements Plugin<Project> {
         throw new GradleException('Android plugin required')
     }
 
-    def createMainJacocoTask(project) {
+    Task createMainJacocoTask() {
         return project.tasks.create(name: "jacoco") {
             group = "Reporting"
             description = "Generate Jacoco coverage reports"
         }
     }
 
-    def createJacocoHtmlVariantTasks(project, variant) {
-        def variantName = variant.getName()
-        def variantNameCapitalized = variantName.capitalize()
-        def outputDestination = "${project.jacocoOptions.outputDestination}/${variantName}"
+    Task createJacocoHtmlVariantTasks(variant) {
+        String variantName = variant.getName()
+        String variantNameCapitalized = variantName.capitalize()
+        String outputDestination = "${project.jacocoOptions.outputDestination}/${variantName}"
         return project.tasks.create(name: "openJacocoHtml${variantNameCapitalized}", type: Exec, dependsOn: "jacoco${variantNameCapitalized}") {
             group = "Reporting"
             executable 'open'
@@ -61,14 +66,14 @@ class JacocoPlugin implements Plugin<Project> {
         }
     }
 
-    def createJacocoVariantTasks(Project project, variant) {
-        def variantName = variant.getName()
-        def variantNameCapitalized = variantName.capitalize()
-        def buildTypeName = variant.buildType.getName()
-        def outputDestination = "${project.jacocoOptions.outputDestination}/${variantName}"
-        def xmlOutputPath = "${outputDestination}/index.xml"
-        def dependentTask = "test${variantNameCapitalized}UnitTest"
-        def classPath = "${project.buildDir}/intermediates/classes/${buildTypeName}"
+    Task createJacocoVariantTasks(variant) {
+        String variantName = variant.getName()
+        String variantNameCapitalized = variantName.capitalize()
+        String buildTypeName = variant.buildType.getName()
+        String outputDestination = "${project.jacocoOptions.outputDestination}/${variantName}"
+        String xmlOutputPath = "${outputDestination}/index.xml"
+        String dependentTask = "test${variantNameCapitalized}UnitTest"
+        String classPath = "${project.buildDir}/intermediates/classes/${buildTypeName}"
         return project.tasks.create(name: "jacoco${variantNameCapitalized}", type: JacocoReport, dependsOn: [dependentTask]) {
             group = "Reporting"
             description = "Generate Jacoco coverage reports"
@@ -96,35 +101,35 @@ class JacocoPlugin implements Plugin<Project> {
         }
     }
 
-    def deleteExcludedClassFiles(project, classPath) {
+    def deleteExcludedClassFiles(classPath) {
         println("deleting intermiediate class files...")
-        delete fileTree(dir: classPath, includes: project.jacocoOptions.excludes)
-        delete fileTree(dir: "${project.buildDir}/intermediates/classes/test")
+        project.delete project.fileTree(dir: classPath, includes: project.jacocoOptions.excludes)
+        project.delete project.fileTree(dir: "${project.buildDir}/intermediates/classes/test")
     }
 
-    def generateBadgeFromXmlReport(String path, String outputDestination) {
+    void generateBadgeFromXmlReport(String path, String outputDestination) {
         println("generating coverage badges...")
         XmlParser parser = new XmlParser()
         parser.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
         parser.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
-        def report = parser.parse(path)
+        Node report = parser.parse(path)
         report.counter.each { counter ->
             String name = counter.'@type'.toLowerCase()
             int missed = Integer.parseInt((String) counter.'@missed')
             int covered = Integer.parseInt((String) counter.'@covered')
             float percentage = ((float) covered) / (covered + missed)
-            this.generateBadge(name, percentage, outputDestination)
+            generateBadge(name, percentage, outputDestination)
         }
     }
 
-    def generateBadge(String name, float percentage, String outputDestination) {
-        def colors = ['red', 'orange', 'yellow', 'yellowgreen', 'green', 'brightgreen']
-        def percentageString = String.format("%.1f%%25", percentage * 100)
-        def colorString = colors[(int) (percentage * 6)]
-        def url = "http://b.repl.ca/v1/${name}-${percentageString}-${colorString}.png"
-        def file = new File("${outputDestination}/badge-${name}.png").newOutputStream()
+    void generateBadge(String name, float percentage, String outputDestination) {
+        String[] colors = ['red', 'orange', 'yellow', 'yellowgreen', 'green', 'brightgreen']
+        String percentageString = String.format("%.1f%%25", percentage * 100)
+        String colorString = colors[(int) (percentage * 6)]
+        URL url = new URL("http://b.repl.ca/v1/${name}-${percentageString}-${colorString}.png")
+        OutputStream file = new File("${outputDestination}/badge-${name}.png").newOutputStream()
         printf("- %-11s: %.1f%% %s\n", name, percentage * 100, url)
-        file << new URL(url).openStream()
+        file << url.openStream()
         file.close()
     }
 }
