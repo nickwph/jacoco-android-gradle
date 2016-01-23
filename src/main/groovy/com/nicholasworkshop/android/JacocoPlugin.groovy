@@ -43,7 +43,7 @@ class JacocoPlugin implements Plugin<Project> {
         }
     }
 
-    Task getBuildVariants() {
+    def getBuildVariants() {
         if (project.plugins.hasPlugin('com.android.application')) {
             return project.android.applicationVariants;
         } else if (project.plugins.hasPlugin('com.android.library')) {
