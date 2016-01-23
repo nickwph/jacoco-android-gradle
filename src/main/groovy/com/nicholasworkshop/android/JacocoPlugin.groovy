@@ -99,7 +99,7 @@ class JacocoPlugin implements Plugin<Project> {
                 // delete class files, it is required if you use jacoco on screwdriver
                 // because screwdriver does not have the option to exclude files
                 if (jacocoOptions.deleteExcludedClassFiles) {
-                    this.deleteExcludedClassFiles(project, classPath)
+                    this.deleteExcludedClassFiles(classPath)
                 }
             }
         }
