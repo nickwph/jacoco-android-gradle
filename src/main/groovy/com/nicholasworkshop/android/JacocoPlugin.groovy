@@ -14,26 +14,30 @@ class JacocoPlugin implements Plugin<Project> {
 
     private Project project;
 
+    private JacocoOptionsExtension getJacocoOptions() {
+        return project.jacocoOptions;
+    }
+
     @Override
     void apply(Project project) {
         this.project = project;
 
-        project.apply plugin: 'jacoco'
+        project.apply(plugin: 'jacoco')
         project.extensions.create('jacocoOptions', JacocoOptionsExtension)
 
         project.afterEvaluate {
-            project.jacoco.setToolVersion(project.jacocoOptions.version)
+            project.jacoco.setToolVersion(jacocoOptions.version)
             // set the default output destination
-            if (project.jacocoOptions.outputDestination == null) {
-                project.jacocoOptions.outputDestination = "${project.buildDir}/reports/jacoco"
+            if (jacocoOptions.outputDestination == null) {
+                jacocoOptions.outputDestination = "${project.buildDir}/reports/jacoco"
             }
             // create jacoco tasks for each build variants
             Task task = this.createMainJacocoTask()
             getBuildVariants().each { variant ->
-                def variantTask = this.createJacocoVariantTasks(project, variant)
+                def variantTask = this.createJacocoVariantTasks(variant)
                 task.dependsOn(variantTask)
-                if (project.jacocoOptions.createHtmlReports) {
-                    this.createJacocoHtmlVariantTasks(project, variant)
+                if (jacocoOptions.createHtmlReports) {
+                    this.createJacocoHtmlVariantTasks(variant)
                 }
             }
         }
@@ -58,7 +62,7 @@ class JacocoPlugin implements Plugin<Project> {
     Task createJacocoHtmlVariantTasks(variant) {
         String variantName = variant.getName()
         String variantNameCapitalized = variantName.capitalize()
-        String outputDestination = "${project.jacocoOptions.outputDestination}/${variantName}"
+        String outputDestination = "${jacocoOptions.outputDestination}/${variantName}"
         return project.tasks.create(name: "openJacocoHtml${variantNameCapitalized}", type: Exec, dependsOn: "jacoco${variantNameCapitalized}") {
             group = "Reporting"
             executable 'open'
@@ -70,31 +74,31 @@ class JacocoPlugin implements Plugin<Project> {
         String variantName = variant.getName()
         String variantNameCapitalized = variantName.capitalize()
         String buildTypeName = variant.buildType.getName()
-        String outputDestination = "${project.jacocoOptions.outputDestination}/${variantName}"
+        String outputDestination = "${jacocoOptions.outputDestination}/${variantName}"
         String xmlOutputPath = "${outputDestination}/index.xml"
         String dependentTask = "test${variantNameCapitalized}UnitTest"
         String classPath = "${project.buildDir}/intermediates/classes/${buildTypeName}"
         return project.tasks.create(name: "jacoco${variantNameCapitalized}", type: JacocoReport, dependsOn: [dependentTask]) {
             group = "Reporting"
             description = "Generate Jacoco coverage reports"
-            classDirectories = project.fileTree(dir: classPath, excludes: project.jacocoOptions.excludes)
+            classDirectories = project.fileTree(dir: classPath, excludes: jacocoOptions.excludes)
             additionalSourceDirs = project.files([project.android.sourceSets.main.java.srcDirs])
             sourceDirectories = project.files([project.android.sourceSets.main.java.srcDirs])
             executionData = project.files("${project.buildDir}/jacoco/${dependentTask}.exec")
             reports {
                 xml.enabled = true
                 xml.destination = xmlOutputPath
-                html.enabled = project.jacocoOptions.createHtmlReports
+                html.enabled = jacocoOptions.createHtmlReports
                 html.destination = outputDestination
             }
             doLast {
                 // generate badge files
-                if (project.jacocoOptions.createBadges) {
+                if (jacocoOptions.createBadges) {
                     this.generateBadgeFromXmlReport(xmlOutputPath, outputDestination)
                 }
                 // delete class files, it is required if you use jacoco on screwdriver
                 // because screwdriver does not have the option to exclude files
-                if (project.jacocoOptions.deleteExcludedClassFiles) {
+                if (jacocoOptions.deleteExcludedClassFiles) {
                     this.deleteExcludedClassFiles(project, classPath)
                 }
             }
@@ -103,7 +107,7 @@ class JacocoPlugin implements Plugin<Project> {
 
     def deleteExcludedClassFiles(classPath) {
         println("deleting intermiediate class files...")
-        project.delete project.fileTree(dir: classPath, includes: project.jacocoOptions.excludes)
+        project.delete project.fileTree(dir: classPath, includes: jacocoOptions.excludes)
         project.delete project.fileTree(dir: "${project.buildDir}/intermediates/classes/test")
     }
 
