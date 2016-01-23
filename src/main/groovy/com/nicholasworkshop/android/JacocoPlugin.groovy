@@ -1,4 +1,4 @@
-package com.nicholasworkshop.jacoco
+package com.nicholasworkshop.android
 
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -9,68 +9,73 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 /**
  * Created by nickwph on 1/22/16.
  */
-class JacocoOptionsPlugin implements Plugin<Project> {
+class JacocoPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        project.jacoco.setToolVersion(project.jacocoOptions.version)
-        // set the default output destination
-        if (project.jacocoOptions.outputDestination == null) {
-            project.jacocoOptions.outputDestination = "${buildDir}/reports/jacoco"
-        }
-        // create jacoco tasks for each build variants
-        def task = this.createMainJacocoTask()
-        this.getBuildVariants().each { variant ->
-            def variantTask = this.createJacocoVariantTasks(variant)
-            task.dependsOn(variantTask)
-            if (project.jacocoOptions.createHtmlReports) {
-                this.createJacocoHtmlVariantTasks(variant)
+        project.apply plugin: 'jacoco'
+        project.extensions.create('jacocoOptions', JacocoOptionsExtension)
+
+        project.afterEvaluate {
+            project.jacoco.setToolVersion(project.jacocoOptions.version)
+            // set the default output destination
+            if (project.jacocoOptions.outputDestination == null) {
+                project.jacocoOptions.outputDestination = "${project.buildDir}/reports/jacoco"
+            }
+            // create jacoco tasks for each build variants
+            def task = this.createMainJacocoTask(project)
+            this.getBuildVariants(project).each { variant ->
+                def variantTask = this.createJacocoVariantTasks(project, variant)
+                task.dependsOn(variantTask)
+                if (project.jacocoOptions.createHtmlReports) {
+                    this.createJacocoHtmlVariantTasks(project, variant)
+                }
             }
         }
     }
 
-    def getBuildVariants() {
+    def getBuildVariants(project) {
         if (project.plugins.hasPlugin('com.android.application')) {
-            return android.applicationVariants;
+            return project.android.applicationVariants;
         } else if (project.plugins.hasPlugin('com.android.library')) {
-            return android.libraryVariants
+            return project.android.libraryVariants
         }
         throw new GradleException('Android plugin required')
     }
 
-    def createMainJacocoTask() {
-        return tasks.create(name: "jacoco") {
+    def createMainJacocoTask(project) {
+        return project.tasks.create(name: "jacoco") {
             group = "Reporting"
             description = "Generate Jacoco coverage reports"
         }
     }
 
-    def createJacocoHtmlVariantTasks(variant) {
+    def createJacocoHtmlVariantTasks(project, variant) {
         def variantName = variant.getName()
         def variantNameCapitalized = variantName.capitalize()
         def outputDestination = "${project.jacocoOptions.outputDestination}/${variantName}"
-        return tasks.create(name: "openJacocoHtml${variantNameCapitalized}", type: Exec, dependsOn: "jacoco${variantNameCapitalized}") {
+        return project.tasks.create(name: "openJacocoHtml${variantNameCapitalized}", type: Exec, dependsOn: "jacoco${variantNameCapitalized}") {
             group = "Reporting"
             executable 'open'
             args "${outputDestination}/index.html"
         }
     }
 
-    def createJacocoVariantTasks(variant) {
+    def createJacocoVariantTasks(Project project, variant) {
         def variantName = variant.getName()
         def variantNameCapitalized = variantName.capitalize()
         def buildTypeName = variant.buildType.getName()
         def outputDestination = "${project.jacocoOptions.outputDestination}/${variantName}"
         def xmlOutputPath = "${outputDestination}/index.xml"
         def dependentTask = "test${variantNameCapitalized}UnitTest"
-        def classPath = "${buildDir}/intermediates/classes/${buildTypeName}"
-        return tasks.create(name: "jacoco${variantNameCapitalized}", type: JacocoReport, dependsOn: [dependentTask]) {
+        def classPath = "${project.buildDir}/intermediates/classes/${buildTypeName}"
+        return project.tasks.create(name: "jacoco${variantNameCapitalized}", type: JacocoReport, dependsOn: [dependentTask]) {
             group = "Reporting"
             description = "Generate Jacoco coverage reports"
-            classDirectories = fileTree(dir: classPath, excludes: project.jacocoOptions.excludes)
-            additionalSourceDirs = files([android.sourceSets.main.java.srcDirs])
-            sourceDirectories = files([android.sourceSets.main.java.srcDirs])
-            executionData = files("${buildDir}/jacoco/${dependentTask}.exec")
+            classDirectories = project.fileTree(dir: classPath, excludes: project.jacocoOptions.excludes)
+            additionalSourceDirs = project.files([project.android.sourceSets.main.java.srcDirs])
+            sourceDirectories = project.files([project.android.sourceSets.main.java.srcDirs])
+            executionData = project.files("${project.buildDir}/jacoco/${dependentTask}.exec")
             reports {
                 xml.enabled = true
                 xml.destination = xmlOutputPath
@@ -85,16 +90,16 @@ class JacocoOptionsPlugin implements Plugin<Project> {
                 // delete class files, it is required if you use jacoco on screwdriver
                 // because screwdriver does not have the option to exclude files
                 if (project.jacocoOptions.deleteExcludedClassFiles) {
-                    this.deleteExcludedClassFiles(classPath)
+                    this.deleteExcludedClassFiles(project, classPath)
                 }
             }
         }
     }
 
-    def deleteExcludedClassFiles(classPath) {
+    def deleteExcludedClassFiles(project, classPath) {
         println("deleting intermiediate class files...")
         delete fileTree(dir: classPath, includes: project.jacocoOptions.excludes)
-        delete fileTree(dir: "${buildDir}/intermediates/classes/test")
+        delete fileTree(dir: "${project.buildDir}/intermediates/classes/test")
     }
 
     def generateBadgeFromXmlReport(String path, String outputDestination) {

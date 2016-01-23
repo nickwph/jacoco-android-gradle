@@ -1,4 +1,4 @@
-package com.nicholasworkshop.jacoco
+package com.nicholasworkshop.android
 /**
  * Created by nickwph on 1/22/16.
  */
