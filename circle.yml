@@ -1,0 +1,4 @@
+test:
+  post:
+    - cp -r build/reports/tests $CIRCLE_ARTIFACTS/test-summary
+    - cp -r build/test-results $CIRCLE_TEST_REPORTS/junit
