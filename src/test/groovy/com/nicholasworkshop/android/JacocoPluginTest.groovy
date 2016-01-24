@@ -12,20 +12,8 @@ class JacocoPluginTest {
 
     @Test
     void testApply() throws Exception {
-        // setup project
         DefaultProject project = ProjectBuilder.builder().build() as DefaultProject
-        File file = new File(project.projectDir.toString(), "local.properties")
-        File local = new File("local.properties")
-        if (local.exists()) {
-            file << local.text
-        } else {
-            FileOutputStream stream = new FileOutputStream(file)
-            Properties properties = new Properties()
-            properties.setProperty("sdk.dir", System.getenv("ANDROID_HOME"))
-            properties.store(stream, null)
-            stream.close()
-        }
-        // run test
+        linkAndroidSdkDir(project)
         project.apply(plugin: 'com.android.application')
         project.apply(plugin: 'com.nicholasworkshop.android.jacoco')
         project.android.compileSdkVersion 23
@@ -38,5 +26,19 @@ class JacocoPluginTest {
         DefaultProject project = ProjectBuilder.builder().build() as DefaultProject
         project.apply plugin: 'com.nicholasworkshop.android.jacoco'
         project.evaluate()
+    }
+
+    private static void linkAndroidSdkDir(DefaultProject project) {
+        File file = new File(project.projectDir.toString(), "local.properties")
+        File local = new File("local.properties")
+        if (local.exists()) {
+            file << local.text
+        } else {
+            FileOutputStream stream = new FileOutputStream(file)
+            Properties properties = new Properties()
+            properties.setProperty("sdk.dir", System.getenv("ANDROID_HOME"))
+            properties.store(stream, null)
+            stream.close()
+        }
     }
 }
