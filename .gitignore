@@ -3,5 +3,5 @@
 build/
 
 *.iml
-gradlew.bat
-local.properties
+*.bat
+*.properties

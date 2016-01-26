@@ -1,9 +1,10 @@
-group 'com.nicholasworkshop.gradle'
-ext.artifactId = 'android-jacoco'
-version '1.0.0'
-
 apply plugin: 'groovy'
 apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'jacoco'
+
+group 'com.nicholasworkshop'
+version '1.0.0'
 
 repositories {
     jcenter()
@@ -12,17 +13,67 @@ repositories {
 dependencies {
     compile gradleApi()
     compile localGroovy()
-    compile 'com.android.tools.build:gradle:1.3.0'
+    compile 'com.android.tools.build:gradle:1.5.0'
 }
 
 install {
+    group 'publish'
     repositories.mavenInstaller {
-        pom.artifactId = artifactId
+        pom.artifactId = 'gradle-artifactid'
     }
 }
 
+jacocoTestReport {
+    name 'jacoco'
+    group 'report'
+    dependsOn test
+    reports.xml.enabled = true
+}
+
 uploadArchives {
-    repositories.mavenDeployer {
-        pom.artifactId = artifactId
+    group 'publish'
+    repositories {
+        mavenDeployer {
+            pom.groupId = project.group
+            pom.artifactId = project.install.repositories.mavenInstaller.pom.artifactId
+            pom.version = project.version
+            pom.project {
+                name 'Gradle Android Jacoco Plugin'
+                packaging 'N/A'
+                description 'N/A'
+                url 'N/A'
+                scm {
+                    url 'N/A'
+                    connection 'N/A'
+                    developerConnection 'N/A'
+                }
+                licenses {
+                    license {
+                        name 'MIT'
+                        url 'N/A'
+                        distribution 'N/A'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'nickwph'
+                        name 'Nicholas Wong'
+                    }
+                }
+            }
+            beforeDeployment { MavenDeployment deployment ->
+                signing.signPom(deployment)
+            }
+            repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
+                authentication(
+                        userName: project.hasProperty('upload.username') ? project.getProperty('upload.username') : "",
+                        password: project.hasProperty('upload.password') ? project.getProperty('upload.password') : "")
+            }
+            snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
+                authentication(
+                        userName: project.hasProperty('upload.username') ? project.getProperty('upload.username') : "",
+                        password: project.hasProperty('upload.password') ? project.getProperty('upload.password') : "")
+            }
+        }
     }
 }
