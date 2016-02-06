@@ -19,7 +19,7 @@ dependencies {
 install {
     group 'publish'
     repositories.mavenInstaller {
-        pom.artifactId = 'gradle-artifactid'
+        pom.artifactId = 'gradle-android-jacoco'
     }
 }
 
