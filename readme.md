@@ -38,7 +38,7 @@ buildscript {
     }
 }
 
-apply plugin: 'com.nicholasworkshop.jacoco'
+apply plugin: 'com.nicholasworkshop.android.jacoco'
 
 // all preferences are optional
 jacocoOptions {

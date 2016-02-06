@@ -13,22 +13,22 @@ class JacocoPluginTest {
 
     @Test
     void testApply() throws Exception {
-        DefaultProject project = createAndroidLibraryProject()
-        project.apply(plugin: 'com.nicholasworkshop.jacoco')
+        DefaultProject project = createAndroidApplicaitonProject()
+        project.apply(plugin: 'com.nicholasworkshop.android.jacoco')
         project.evaluate()
     }
 
     @Test
     void testApply_whenAndroidLibraryIsUsed() throws Exception {
         DefaultProject project = createAndroidLibraryProject()
-        project.apply(plugin: 'com.nicholasworkshop.jacoco')
+        project.apply(plugin: 'com.nicholasworkshop.android.jacoco')
         project.evaluate()
     }
 
     @Test(expected = GradleException)
     void testApply_ifNoAndroidPlugin_thenThrowException() throws Exception {
         DefaultProject project = ProjectBuilder.builder().build() as DefaultProject
-        project.apply plugin: 'com.nicholasworkshop.android.jacoco'
+        project.apply(plugin: 'com.nicholasworkshop.android.jacoco')
         project.evaluate()
     }
 
