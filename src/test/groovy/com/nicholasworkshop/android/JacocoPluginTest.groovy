@@ -1,6 +1,7 @@
 package com.nicholasworkshop.android
 
 import org.gradle.api.GradleException
+import org.gradle.api.Project
 import org.gradle.api.internal.project.DefaultProject
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
@@ -12,12 +13,15 @@ class JacocoPluginTest {
 
     @Test
     void testApply() throws Exception {
-        DefaultProject project = ProjectBuilder.builder().build() as DefaultProject
-        linkAndroidSdkDir(project)
-        project.apply(plugin: 'com.android.application')
+        DefaultProject project = createAndroidLibraryProject()
         project.apply(plugin: 'com.nicholasworkshop.android.jacoco')
-        project.android.compileSdkVersion 23
-        project.android.buildToolsVersion "23.0.1"
+        project.evaluate()
+    }
+
+    @Test
+    void testApply_whenAndroidLibraryIsUsed() throws Exception {
+        DefaultProject project = createAndroidLibraryProject()
+        project.apply(plugin: 'com.nicholasworkshop.android.jacoco')
         project.evaluate()
     }
 
@@ -26,6 +30,35 @@ class JacocoPluginTest {
         DefaultProject project = ProjectBuilder.builder().build() as DefaultProject
         project.apply plugin: 'com.nicholasworkshop.android.jacoco'
         project.evaluate()
+    }
+
+
+    private static Project createAndroidApplicaitonProject() {
+        DefaultProject project = ProjectBuilder.builder().build() as DefaultProject
+        linkAndroidSdkDir(project)
+        generateAndroidManifest(project)
+        project.apply(plugin: 'com.android.application')
+        project.android.compileSdkVersion 23
+        project.android.buildToolsVersion "23.0.1"
+        return project
+    }
+
+    private static Project createAndroidLibraryProject() {
+        DefaultProject project = ProjectBuilder.builder().build() as DefaultProject
+        linkAndroidSdkDir(project)
+        generateAndroidManifest(project)
+        project.apply(plugin: 'com.android.library')
+        project.android.compileSdkVersion 23
+        project.android.buildToolsVersion "23.0.1"
+        return project
+    }
+
+    private static void generateAndroidManifest(Project project) {
+        File path = new File(project.projectDir.toString(), "src/main")
+        File file = new File(path.toString(), "AndroidManifest.xml")
+        path.mkdirs()
+        file.createNewFile()
+        file << "<manifest/>"
     }
 
     private static void linkAndroidSdkDir(DefaultProject project) {
