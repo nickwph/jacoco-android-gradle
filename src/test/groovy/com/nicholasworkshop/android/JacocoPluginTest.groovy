@@ -14,14 +14,14 @@ class JacocoPluginTest {
     @Test
     void testApply() throws Exception {
         DefaultProject project = createAndroidLibraryProject()
-        project.apply(plugin: 'com.nicholasworkshop.android.jacoco')
+        project.apply(plugin: 'com.nicholasworkshop.jacoco')
         project.evaluate()
     }
 
     @Test
     void testApply_whenAndroidLibraryIsUsed() throws Exception {
         DefaultProject project = createAndroidLibraryProject()
-        project.apply(plugin: 'com.nicholasworkshop.android.jacoco')
+        project.apply(plugin: 'com.nicholasworkshop.jacoco')
         project.evaluate()
     }
 
