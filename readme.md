@@ -31,7 +31,7 @@ These tasks are created only when <code>createHtmlReports</code> is true.
 ```groovy
 buildscript {
     repositories {
-        maven { url "https://oss.sonatype.org/service/local/staging/deploy/maven2" }
+        maven { url "https://oss.sonatype.org/content/groups/staging" }
     }
     dependencies {
         classpath 'com.nicholasworkshop:gradle-android-jacoco:1.0.0'

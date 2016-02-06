@@ -30,6 +30,25 @@ jacocoTestReport {
     reports.xml.enabled = true
 }
 
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+signing {
+    sign configurations.archives
+}
+
 uploadArchives {
     group 'publish'
     repositories {
@@ -39,19 +58,19 @@ uploadArchives {
             pom.version = project.version
             pom.project {
                 name 'Gradle Android Jacoco Plugin'
-                packaging 'N/A'
+                packaging 'jar'
                 description 'N/A'
-                url 'N/A'
+                url 'https://github.com/nickwph/jacoco-android-gradle'
                 scm {
-                    url 'N/A'
-                    connection 'N/A'
-                    developerConnection 'N/A'
+                    url 'https://github.com/nickwph/jacoco-android-gradle'
+                    connection 'scm:git@github.com:nickwph/jacoco-android-gradle.git'
+                    developerConnection 'scm:git@github.com:nickwph/jacoco-android-gradle.git'
                 }
                 licenses {
                     license {
-                        name 'MIT'
-                        url 'N/A'
-                        distribution 'N/A'
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
                     }
                 }
                 developers {
