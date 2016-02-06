@@ -51,7 +51,7 @@ class JacocoPlugin implements Plugin<Project> {
 
     private JacocoPluginExtension getJacoco() {
         if (!project.plugins.hasPlugin('jacoco')) {
-            println('jacoco plugin not found, applying one...')
+            println('Jacoco plugin not found, applying one...')
             project.apply(plugin: 'jacoco')
         }
         return project.jacoco
@@ -73,7 +73,7 @@ class JacocoPlugin implements Plugin<Project> {
             LibraryExtension library = android as LibraryExtension;
             return library.libraryVariants
         }
-        throw new GradleException('com.android.application or com.android.library plugin required')
+        throw new GradleException('Android plugins required!')
     }
 
     private Task createJacocoTask() {
@@ -137,13 +137,13 @@ class JacocoPlugin implements Plugin<Project> {
     }
 
     private void deleteExcludedClassFiles(classPath) {
-        println("deleting intermiediate class files...")
+        println("Deleting intermiediate class files...")
         project.delete project.fileTree(dir: classPath, includes: jacocoOptions.excludes)
         project.delete project.fileTree(dir: "${project.buildDir}/intermediates/classes/test")
     }
 
     private void generateBadgeFromXmlReport(String path, String outputDestination) {
-        println("generating coverage badges...")
+        println("Generating coverage badges...")
         XmlParser parser = new XmlParser()
         parser.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
         parser.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
