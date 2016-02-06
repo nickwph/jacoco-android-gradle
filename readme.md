@@ -1,5 +1,8 @@
 # Android Jacoco Plugin
 
+[![Circle CI](https://circleci.com/gh/nickwph/jacoco-android-gradle.svg?style=shield)](https://circleci.com/gh/nickwph/jacoco-android-gradle)
+[![codecov.io](https://codecov.io/github/nickwph/jacoco-android-gradle/coverage.svg?branch=master)](https://codecov.io/github/nickwph/jacoco-android-gradle?branch=master)
+
 ## What is it
 
 A jacoco plugin that provides better options and support to your Android project. It pre-set exclusion list that suits most Android projects.
