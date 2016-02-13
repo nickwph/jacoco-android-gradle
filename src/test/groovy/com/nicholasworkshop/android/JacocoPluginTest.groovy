@@ -4,7 +4,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.internal.project.DefaultProject
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.Test
+import org.testng.annotations.Test
 
 /**
  * Created by nickwph on 1/23/16.
@@ -25,7 +25,7 @@ class JacocoPluginTest {
         project.evaluate()
     }
 
-    @Test(expected = GradleException)
+    @Test(expectedExceptions = GradleException)
     void testApply_ifNoAndroidPlugin_thenThrowException() throws Exception {
         DefaultProject project = ProjectBuilder.builder().build() as DefaultProject
         project.apply(plugin: 'com.nicholasworkshop.android.jacoco')
