@@ -1,8 +1,20 @@
-apply plugin: 'groovy'
-apply plugin: 'maven'
-apply plugin: 'signing'
-apply plugin: 'jacoco'
+buildscript {
+    repositories {
+        jcenter()
+        maven { url "http://dl.bintray.com/nickwph/maven" }
+    }
+    dependencies {
+        classpath 'com.nicholasworkshop:gradle-artifactid:1.0.0'
+        classpath 'com.nicholasworkshop:gradle-publish:1.0.0'
+    }
+}
 
+apply plugin: 'groovy'
+apply plugin: 'jacoco'
+apply plugin: 'com.nicholasworkshop.artifactid'
+apply plugin: 'com.nicholasworkshop.publish'
+
+id 'gradle-android-jacoco'
 group 'com.nicholasworkshop'
 version '1.0.0'
 
@@ -16,11 +28,8 @@ dependencies {
     compile 'com.android.tools.build:gradle:1.5.0'
 }
 
-install {
-    group 'publish'
-    repositories.mavenInstaller {
-        pom.artifactId = 'gradle-android-jacoco'
-    }
+test {
+    useTestNG()
 }
 
 jacocoTestReport {
@@ -30,69 +39,17 @@ jacocoTestReport {
     reports.xml.enabled = true
 }
 
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc
-}
-
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives sourcesJar
-    archives javadocJar
-}
-
-signing {
-    sign configurations.archives
-}
-
-uploadArchives {
-    group 'publish'
-    repositories {
-        mavenDeployer {
-            pom.groupId = project.group
-            pom.artifactId = project.install.repositories.mavenInstaller.pom.artifactId
-            pom.version = project.version
-            pom.project {
-                name 'Gradle Android Jacoco Plugin'
-                packaging 'jar'
-                description 'N/A'
-                url 'https://github.com/nickwph/jacoco-android-gradle'
-                scm {
-                    url 'https://github.com/nickwph/jacoco-android-gradle'
-                    connection 'scm:git@github.com:nickwph/jacoco-android-gradle.git'
-                    developerConnection 'scm:git@github.com:nickwph/jacoco-android-gradle.git'
-                }
-                licenses {
-                    license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution 'repo'
-                    }
-                }
-                developers {
-                    developer {
-                        id 'nickwph'
-                        name 'Nicholas Wong'
-                    }
-                }
-            }
-            beforeDeployment { MavenDeployment deployment ->
-                signing.signPom(deployment)
-            }
-            repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-                authentication(
-                        userName: project.hasProperty('upload.username') ? project.getProperty('upload.username') : "",
-                        password: project.hasProperty('upload.password') ? project.getProperty('upload.password') : "")
-            }
-            snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
-                authentication(
-                        userName: project.hasProperty('upload.username') ? project.getProperty('upload.username') : "",
-                        password: project.hasProperty('upload.password') ? project.getProperty('upload.password') : "")
-            }
+publish {
+    projectName 'Jacoco Android Gradle Plugin'
+    projectUrl 'https://github.com/nickwph/jacoco-android-gradle'
+    developerId 'nickwph'
+    developerName 'Nicholas Wong'
+    licenses 'apache-2.0'
+    signing true
+    mavenTargets {
+        sonatype
+        bintray {
+            packageName 'jacoco-android-gradle'
         }
     }
 }
